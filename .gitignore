@@ -1,0 +1,26 @@
+# Sản phẩm build của Wails
+/build/bin/
+
+# Nhị phân biên dịch (wincheck.exe, genicon.exe, output wails…)
+*.exe
+
+# Frontend
+/frontend/node_modules/
+# Dist là output biên dịch frontend (wails build tự sinh) — chỉ giữ placeholder
+# để go:embed và go test hoạt động trên bản clone sạch.
+/frontend/dist/*
+!/frontend/dist/.gitkeep
+
+# Tệp tạm / hệ điều hành
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Độ phủ test
+coverage.out
+*.cover
+
+# IDE
+.vscode/
+.idea/
