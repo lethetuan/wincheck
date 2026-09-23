@@ -1,17 +1,17 @@
 <div align="center">
 
-# WinCheck, Trình Quản Lý Bản Quyền Windows
+# WinCheck Trình Quản Lý Bản Quyền Windows
 
 **Windows của bạn có đang dùng key lậu không? Mở app là biết ngay.**
 
 Ứng dụng desktop kiểm định bản quyền Windows, viết bằng Go + Wails + React, dành riêng cho thị trường Việt Nam.
 
-[![Backend](https://img.shields.io/badge/backend-Go%201.26-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![GUI](https://img.shields.io/badge/GUI-Wails%20%2B%20React-2563EB?style=flat-square)](https://wails.io)
-[![Nền tảng](https://img.shields.io/badge/n%E1%BB%81n%20t%E1%BA%A3ng-Windows%2010%2F11-1D4ED8?style=flat-square)](#yêu-cầu-hệ-thống)
-[![Giấy phép](https://img.shields.io/badge/gi%E1%BA%A5y%20ph%C3%A9p-MIT-2563EB?style=flat-square)](LICENSE)
 
-![Ảnh chụp màn hình WinCheck](docs/screenshot.png)
+[Ảnh chụp màn hình WinCheck]
+
+<img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/645ee39f-94e4-4b40-badd-f121a5d854f9" />
+
+
 
 **📱 Cần mua key bản quyền Windows + Office chính hãng? Liên hệ Zalo: [0352 194 195](https://zalo.me/0352194195)**
 
