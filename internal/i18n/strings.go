@@ -437,7 +437,7 @@ var M = map[string]string{
 	"V_ToolsHeader":     "Công cụ nâng cao",
 	"V_ToolsChangeHead": "THAY ĐỔI KEY BẢN QUYỀN",
 	"V_ToolInstallKey":  "Cài / thay key bản quyền mới",
-	"V_ToolInstallDesc": "Nhập và cài một key bản quyền khác cho Windows",
+	"V_ToolInstallDesc": "Tự động dọn sạch crack & gỡ key cũ trước khi nhập key mới",
 	"V_ToolRemoveKey":   "Gỡ key bản quyền hiện tại",
 	"V_ToolRemoveDesc":  "Xóa key đang cài, Windows sẽ về trạng thái chưa kích hoạt",
 	"V_ToolsActHead":    "KÍCH HOẠT",

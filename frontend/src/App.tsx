@@ -84,7 +84,11 @@ function ToolBtn({ title, desc, danger, disabled, onClick }: {
 }
 
 type Adv = { dlv: boolean; autoRemove: boolean; restart: boolean };
-type Dialog = { kind: "key" } | { kind: "confirm"; msg: string; run: () => void } | null;
+type Dialog =
+  | { kind: "key" }
+  | { kind: "confirm"; title?: string; msg: string; run: () => void }
+  | { kind: "alert"; title?: string; msg: string }
+  | null;
 type Drawer = "log" | "tools" | null;
 
 export default function App() {
@@ -138,12 +142,127 @@ export default function App() {
       confirm: !!extra.confirm, key: extra.key || "", n: 1,
     });
     busyRef.current = true; setScanning(true); setDrawer("log");
-    try { await RunOption(opt, o); } finally { busyRef.current = false; setScanning(false); }
+    try {
+      await RunOption(opt, o);
+      if (opt === 5 || opt === 8 || opt === 9) {
+        setVerdict(await Scan());
+      }
+    } finally { busyRef.current = false; setScanning(false); }
+  }
+
+  /* ── Quy trình Cài/Thay key bản quyền mới:
+     Tự động hoàn thành dọn sạch crack (gỡ key + xóa công cụ),
+     kiểm tra chắc chắn sạch sẽ xong mới cho người dùng nhập key mới ── */
+  async function runInstallKeyFlow() {
+    if (busyRef.current) return;
+    setDialog(null);
+    busyRef.current = true;
+    setScanning(true);
+    setDrawer("log");
+    setStatusText("Đang tự động dọn sạch crack Windows trước khi cài key...");
+    setLines((p) => [
+      ...p,
+      new main.Line({ kind: 3, text: "=== TỰ ĐỘNG DỌN SẠCH CRACK TRƯỚC KHI CÀI KEY MỚI ===", label: "", value: "" }),
+      new main.Line({ kind: 6, text: "WinCheck đang dọn sạch mọi dấu vết crack và gỡ key cũ để bảo đảm hệ thống sạch sẽ...", label: "", value: "" }),
+    ]);
+
+    try {
+      // 1. Chạy hoàn thành các bước của Tùy chọn 8 (Dọn sạch crack: dừng tiến trình, dịch vụ, tác vụ, IFEO, KMS, file, key)
+      const a = advRef.current;
+      const cleanOpts = new main.RunOpts({
+        showFullKey: true,
+        dlv: a.dlv,
+        autoRemove: a.autoRemove,
+        restart: a.restart,
+        confirm: true,
+        key: "",
+        n: 1,
+      });
+      await RunOption(8, cleanOpts);
+
+      // 2. Chắc chắn rằng đã sạch sẽ: quét kiểm tra lại toàn bộ hệ thống
+      setStatusText("Đang quét kiểm tra lại hệ thống để bảo đảm đã sạch sẽ...");
+      setLines((p) => [
+        ...p,
+        new main.Line({ kind: 3, text: "=== KIỂM TRA LẠI HỆ THỐNG ===", label: "", value: "" }),
+        new main.Line({ kind: 5, text: "Quét kiểm tra toàn diện 10 lớp dấu hiệu crack...", label: "", value: "" }),
+      ]);
+      const freshVerdict = await Scan();
+      setVerdict(freshVerdict);
+
+      // 3. Đánh giá độ sạch sẽ:
+      const remainingCount = (freshVerdict.indicators && freshVerdict.indicators.length) || freshVerdict.count || 0;
+      const notClean = remainingCount > 0 || freshVerdict.level === "critical" || freshVerdict.level === "suspicious";
+
+      if (notClean) {
+        setLines((p) => [
+          ...p,
+          new main.Line({ kind: 9, text: `Hệ thống chưa sạch sẽ hoàn toàn (${remainingCount} dấu vết crack còn tồn tại). Không thể cài key mới lúc này.`, label: "", value: "" }),
+        ]);
+        const issueList = (freshVerdict.indicators || []).map((i) => `• ${i.text}`).join("\n");
+        setDialog({
+          kind: "alert",
+          title: "Chưa thể cài key bản quyền mới",
+          msg: `WinCheck đã tự động dọn sạch crack, tuy nhiên hệ thống vẫn còn ${remainingCount} dấu vết chưa được loại bỏ hoàn toàn:\n\n${issueList}\n\nVui lòng khởi động lại máy hoặc xử lý dứt điểm các dấu vết trên trước khi cài key bản quyền mới để tránh xung đột.`,
+        });
+        return;
+      }
+
+      // 4. Đã chắc chắn sạch sẽ xong: thông báo và MỚI hiển thị popup nhập key bản quyền mới
+      setLines((p) => [
+        ...p,
+        new main.Line({ kind: 7, text: "Hệ thống đã được dọn sạch sẽ hoàn toàn! Sẵn sàng cài đặt key bản quyền mới.", label: "", value: "" }),
+      ]);
+      setKeyInput("");
+      setDialog({ kind: "key" });
+    } catch (err: any) {
+      setDialog({
+        kind: "alert",
+        title: "Lỗi dọn sạch crack",
+        msg: `Đã xảy ra lỗi trong quá trình tự động dọn sạch crack: ${err?.message || err || "Không xác định"}. Vui lòng thử lại.`,
+      });
+    } finally {
+      busyRef.current = false;
+      setScanning(false);
+    }
+  }
+
+  /* ── Xác nhận cài đặt key sau khi người dùng nhập vào popup ── */
+  async function handleConfirmInstallKey() {
+    const key = keyInput.trim();
+    if (!key) return;
+    setDialog(null);
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setScanning(true);
+    setDrawer("log");
+    setStatusText("Đang cài đặt key bản quyền mới...");
+
+    const a = advRef.current;
+    const o = new main.RunOpts({
+      showFullKey: true,
+      dlv: a.dlv,
+      autoRemove: a.autoRemove,
+      restart: a.restart,
+      confirm: true,
+      key: key,
+      n: 1,
+    });
+    try {
+      await RunOption(4, o);
+      // Quét lại ngay sau khi cài key để cập nhật trạng thái bản quyền trên dashboard
+      setStatusText("Đang cập nhật lại trạng thái bản quyền...");
+      const v = await Scan();
+      setVerdict(v);
+    } finally {
+      busyRef.current = false;
+      setScanning(false);
+    }
   }
 
   function runTool(opt: number) {
     if (busyRef.current) return;
-    if (opt === 4) { setKeyInput(""); setDialog({ kind: "key" }); return; }
+    if (opt === 4) { runInstallKeyFlow(); return; }
     if (opt === 5) { setDialog({ kind: "confirm", msg: "Bạn CHẮC CHẮN muốn gỡ key bản quyền? Windows sẽ trở thành CHƯA KÍCH HOẠT.", run: () => doRun(5, { confirm: true }) }); return; }
     if (opt === 8) { setDialog({ kind: "confirm", msg: "DỌN SẠCH CRACK\n\nWinCheck sẽ kết thúc tiến trình, dừng/xóa dịch vụ, xóa tác vụ định kỳ, gỡ hook IFEO, xóa cấu hình KMS, xóa tệp công cụ crack và GỠ key kích hoạt.\n\nSau khi chạy, Windows sẽ CHƯA KÍCH HOẠT và cần cài key bản quyền thật. Nên khởi động lại máy sau khi dọn.\n\nBạn CHẮC CHẮN muốn tiếp tục?", run: () => doRun(8, { confirm: true }) }); return; }
     if (opt === 9) { setDialog({ kind: "confirm", msg: S["O9_Confirm"] || "GỠ SẠCH KEY OFFICE LẬU\n\nWinCheck sẽ quét tất cả phiên bản Office (Office 2010 - 2024, Office 365), xóa máy chủ KMS lậu và gỡ bỏ toàn bộ key kích hoạt tồn đọng.\n\nSau khi gỡ, bạn có thể nhập key bản quyền chính hãng để kích hoạt lại Office.\n\nBạn CHẮC CHẮN muốn tiếp tục?", run: () => doRun(9, { confirm: true }) }); return; }
@@ -443,9 +562,17 @@ export default function App() {
       {dialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setDialog(null)}>
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            {dialog.kind === "confirm" ? (
+            {dialog.kind === "alert" ? (
               <>
-                <h2 className="text-base font-bold text-slate-900">Xác nhận</h2>
+                <h2 className="text-base font-bold text-red-600">{dialog.title || "Thông báo"}</h2>
+                <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600">{dialog.msg}</p>
+                <div className="mt-6 flex justify-end">
+                  <button className="h-8 rounded-md bg-brand-600 px-4 text-[13px] font-semibold text-white hover:bg-brand-700" onClick={() => setDialog(null)}>Đã hiểu</button>
+                </div>
+              </>
+            ) : dialog.kind === "confirm" ? (
+              <>
+                <h2 className="text-base font-bold text-slate-900">{dialog.title || "Xác nhận"}</h2>
                 <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-600">{dialog.msg}</p>
                 <div className="mt-6 flex justify-end gap-2">
                   <button className={btn} onClick={() => setDialog(null)}>Hủy</button>
@@ -457,12 +584,12 @@ export default function App() {
                 <h2 className="text-base font-bold text-slate-900">Nhập Key Bản Quyền</h2>
                 <p className="mt-2 whitespace-pre-wrap text-[13px] text-slate-600">{S["O4_Prompt"]}</p>
                 <input autoFocus value={keyInput} onChange={(e) => setKeyInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") doRun(4, { key: keyInput, confirm: true }); if (e.key === "Escape") setDialog(null); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleConfirmInstallKey(); if (e.key === "Escape") setDialog(null); }}
                   className="selectable mt-3 w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-brand-500" />
                 <div className="mt-6 flex justify-end gap-2">
                   <button className={btn} onClick={() => setDialog(null)}>Hủy</button>
                   <button className="h-8 rounded-md bg-brand-600 px-4 text-[13px] font-semibold text-white hover:bg-brand-700"
-                    onClick={() => doRun(4, { key: keyInput, confirm: true })}>Xác nhận</button>
+                    onClick={handleConfirmInstallKey}>Xác nhận</button>
                 </div>
               </>
             )}

@@ -110,7 +110,7 @@ Danh sách chữ ký (dịch vụ, tiến trình, tác vụ, tệp, tên miền 
 
 | Thao tác | Quyền | Mô tả |
 |----------|-------|-------|
-| **Cài / thay key** | **Admin** | Xác thực và cài key mới qua Software Licensing API (`InstallProductKey`), chẩn đoán mã lỗi chi tiết |
+| **Cài / thay key** | **Admin** | Tự động dọn sạch mọi dấu vết crack và gỡ key cũ trước khi nhập key mới, bảo đảm hệ thống sạch sẽ tránh xung đột bản quyền; xác thực và cài key mới qua Software Licensing API (`InstallProductKey`), chẩn đoán mã lỗi chi tiết |
 | **Gỡ key** | **Admin** | Xóa key hiện tại (`UninstallProductKey` + `ClearProductKeyFromRegistry`) |
 | **Đặt lại kích hoạt (Rearm)** | **Admin** | Reset đếm ngược kích hoạt (`ReArmWindows`) |
 | **Dọn key dự phòng** | **Admin** | Xóa `BackupProductKeyDefault` cũ trong Registry (không ảnh hưởng kích hoạt hiện tại) |
@@ -284,5 +284,5 @@ Sử dụng Windows **không có bản quyền chính hãng** mua từ Microsoft
 Phân phối theo giấy phép **[MIT](LICENSE)**.
 
 <div align="center">
-  <sub>WinCheck, Trình Quản Lý Bản Quyền Windows · Tác giả: Lê Thế Tuấn · Viết bằng Go cho thị trường Việt Nam 🇻🇳</sub>
+  <sub>WinCheck, Trình Quản Lý Bản Quyền Windows· Viết bằng Go cho thị trường Việt Nam 🇻🇳</sub>
 </div>
